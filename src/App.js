@@ -1,31 +1,117 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './App.css';
 import { ATTRIBUTE_LIST, CLASS_LIST, SKILL_LIST } from './consts.js';
 
 function App() {
   const [num, setNum] = useState(0);
-  // Create state for each attribute
-  const [attributes, setAttributes] = useState(
-    Object.fromEntries(ATTRIBUTE_LIST.map(attr => [attr, num]))
-  );
-
-  const [skills, setSkills] = useState(
-    Object.fromEntries(SKILL_LIST.map(skill => [skill.name, 0]))
-  );
-
+  const [selectedClass, setSelectedClass] = useState(null);
+  const [attributes, setAttributes] = useState({});
+  const [skills, setSkills] = useState({});
   const [skillPoints, setSkillPoints] = useState(0);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+  const isInitialMount = useRef(true);
 
   useEffect(() => {
-    const intelligenceModifier = calculateModifier(attributes.Intelligence);
-    const newSkillPoints = 10 + (4 * intelligenceModifier);
-    
-    if (newSkillPoints < skillPoints) {
-      const pointsToRemove = skillPoints - newSkillPoints;
-      removeExcessSkillPoints(pointsToRemove);
+    const loadData = async () => {
+      await fetchCharacterData();
+      setIsDataLoaded(true);
+    };
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+    } else if (isDataLoaded) {
+      const timer = setTimeout(() => {
+        saveCharacterData();
+      }, 500); // Debounce for 500ms
+
+      return () => clearTimeout(timer);
     }
+  }, [attributes, skills, selectedClass, num, skillPoints, isDataLoaded]);
+
+  const fetchCharacterData = async () => {
+    try {
+      const response = await fetch('https://recruiting.verylongdomaintotestwith.ca/api/{sowasred}/character');
+      const data = response.ok ? await response.json() : {};
+      
+      const defaultAttributes = Object.fromEntries(ATTRIBUTE_LIST.map(attr => [attr, 0]));
+      const defaultSkills = Object.fromEntries(SKILL_LIST.map(skill => [skill.name, 0]));
+      const fetchedAttributes = data.body.attributes || defaultAttributes;
+      const fetchedSkills = data.body.skills || defaultSkills;
+      
+      setAttributes(fetchedAttributes);
+      setSkills(fetchedSkills);
+      setSelectedClass(data.body.selectedClass || null);
+      setNum(data.body.num || 0);
+      
+      // Update skill points based on Intelligence
+      const intelligenceModifier = calculateModifier(fetchedAttributes['Intelligence']);
+      const newSkillPoints = 10 + (4 * intelligenceModifier);
+      setSkillPoints(newSkillPoints);
+      
+      // Update skills based on new attribute modifiers
+      const updatedSkills = {...fetchedSkills};
+      SKILL_LIST.forEach(skill => {
+        const attributeModifier = calculateModifier(fetchedAttributes[skill.attributeModifier]);
+        updatedSkills[skill.name] = Math.max(0, fetchedSkills[skill.name] + attributeModifier);
+      });
+      setSkills(updatedSkills);
+      
+    } catch (error) {
+      console.error('Error fetching character data:', error);
+      setDefaultValues();
+    }
+  };
+
+  const setDefaultValues = () => {
+    const defaultAttributes = Object.fromEntries(ATTRIBUTE_LIST.map(attr => [attr, 0]));
+    const defaultSkills = Object.fromEntries(SKILL_LIST.map(skill => [skill.name, 0]));
     
-    setSkillPoints(newSkillPoints);
-  }, [attributes.Intelligence]);
+    setAttributes(defaultAttributes);
+    setSkills(defaultSkills);
+    setSelectedClass(null);
+    setNum(0);
+    setSkillPoints(0);
+  };
+
+  const saveCharacterData = async () => {
+    // Check if there's any non-default data to save
+    const hasNonDefaultData = 
+      Object.values(attributes).some(value => value !== 0) ||
+      Object.values(skills).some(value => value !== 0) ||
+      selectedClass !== null ||
+      num !== 0 ||
+      skillPoints !== 0;
+
+    if (!hasNonDefaultData) {
+      console.log('No non-default data to save');
+      return;
+    }
+
+    try {
+      const response = await fetch('https://recruiting.verylongdomaintotestwith.ca/api/{sowasred}/character', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          attributes,
+          skills,
+          selectedClass,
+          num,
+          skillPoints,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to save character data');
+      }
+    } catch (error) {
+      console.error('Error saving character data:', error);
+    }
+  };
 
   const removeExcessSkillPoints = (pointsToRemove) => {
     setSkills(prev => {
@@ -80,8 +166,6 @@ function App() {
     return ATTRIBUTE_LIST.every(attr => attributes[attr] >= classInfo[attr]);
   };
 
-  const [selectedClass, setSelectedClass] = useState(null);
-
   // Function to calculate ability modifier
   const calculateModifier = (attributeValue) => {
     return Math.floor((attributeValue - 10) / 2);
@@ -116,10 +200,10 @@ function App() {
         <div>Total Points: {num}</div>
         {ATTRIBUTE_LIST.map(attr => (
           <div key={attr}>
-            {attr}: {attributes[attr]}
+            {attr}: {attributes[attr] || 0}
             <button onClick={() => updateAttribute(attr, 1)}>+</button>
             <button onClick={() => updateAttribute(attr, -1)}>-</button>
-            <span> Modifier: {calculateModifier(attributes[attr])}</span>
+            <span> Modifier: {calculateModifier(attributes[attr] || 0)}</span>
           </div>
         ))}
       </section>
