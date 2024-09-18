@@ -11,6 +11,7 @@ function App() {
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   const isInitialMount = useRef(true);
+  const MAX_ATTRIBUTE_POINTS = 70;
 
   useEffect(() => {
     const loadData = async () => {
@@ -51,14 +52,6 @@ function App() {
       const intelligenceModifier = calculateModifier(fetchedAttributes['Intelligence']);
       const newSkillPoints = 10 + (4 * intelligenceModifier);
       setSkillPoints(newSkillPoints);
-      
-      // Update skills based on new attribute modifiers
-      // const updatedSkills = {...fetchedSkills};
-      // SKILL_LIST.forEach(skill => {
-      //   const attributeModifier = calculateModifier(fetchedAttributes[skill.attributeModifier]);
-      //   updatedSkills[skill.name] = Math.max(0, fetchedSkills[skill.name] + attributeModifier);
-      // });
-      // setSkills(updatedSkills);
       
     } catch (error) {
       console.error('Error fetching character data:', error);
@@ -139,21 +132,31 @@ function App() {
   const updateAttribute = (attr, change) => {
     setAttributes(prev => {
       const newValue = Math.max(0, prev[attr] + change);
-      if (newValue !== prev[attr]) {
-        setNum(prevNum => prevNum + change);
-        
-        // Only adjust skill points if Intelligence is changed
-        if (attr === 'Intelligence') {
-          const newIntelligenceModifier = calculateModifier(newValue);
-          const newSkillPoints = 10 + (4 * newIntelligenceModifier);
-          setSkillPoints(newSkillPoints);
-          
-          if (newSkillPoints < skillPoints) {
-            const pointsToRemove = skillPoints - newSkillPoints;
-            removeExcessSkillPoints(pointsToRemove);
-          }
+  
+      // Calculate the new total attribute points
+      const totalAttributePoints = getTotalAttributePoints(prev) - prev[attr] + newValue;
+  
+      // Check if the new total exceeds the maximum
+      if (totalAttributePoints > MAX_ATTRIBUTE_POINTS) {
+        // Do not allow the increase
+        return prev;
+      }
+  
+      // Update num (total points allocated)
+      setNum(totalAttributePoints);
+  
+      // Adjust skill points if Intelligence is changed
+      if (attr === 'Intelligence') {
+        const newIntelligenceModifier = calculateModifier(newValue);
+        const newSkillPoints = 10 + (4 * newIntelligenceModifier);
+        setSkillPoints(newSkillPoints);
+  
+        if (newSkillPoints < skillPoints) {
+          const pointsToRemove = skillPoints - newSkillPoints;
+          removeExcessSkillPoints(pointsToRemove);
         }
       }
+  
       return {
         ...prev,
         [attr]: newValue
@@ -190,6 +193,12 @@ function App() {
   };
 
   const availableSkillPoints = Math.max(0, skillPoints - Object.values(skills).reduce((sum, val) => sum + val, 0));
+
+  // Function to calculate the total attribute points
+  const getTotalAttributePoints = (attributes) => {
+    return Object.values(attributes).reduce((sum, val) => sum + val, 0);
+  };
+
 
   return (
     <div className="App">
