@@ -53,12 +53,12 @@ function App() {
       setSkillPoints(newSkillPoints);
       
       // Update skills based on new attribute modifiers
-      const updatedSkills = {...fetchedSkills};
-      SKILL_LIST.forEach(skill => {
-        const attributeModifier = calculateModifier(fetchedAttributes[skill.attributeModifier]);
-        updatedSkills[skill.name] = Math.max(0, fetchedSkills[skill.name] + attributeModifier);
-      });
-      setSkills(updatedSkills);
+      // const updatedSkills = {...fetchedSkills};
+      // SKILL_LIST.forEach(skill => {
+      //   const attributeModifier = calculateModifier(fetchedAttributes[skill.attributeModifier]);
+      //   updatedSkills[skill.name] = Math.max(0, fetchedSkills[skill.name] + attributeModifier);
+      // });
+      // setSkills(updatedSkills);
       
     } catch (error) {
       console.error('Error fetching character data:', error);
