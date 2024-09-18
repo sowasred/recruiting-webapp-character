@@ -23,6 +23,8 @@ function App() {
     return ATTRIBUTE_LIST.every(attr => attributes[attr] >= classInfo[attr]);
   };
 
+  const [selectedClass, setSelectedClass] = useState(null);
+
   return (
     <div className="App">
       <header className="App-header">
@@ -44,13 +46,21 @@ function App() {
           const classInfo = CLASS_LIST[className];
           const isReqMet = checkRequirements(classInfo);
           return (
-            <div key={className} style={{ color: isReqMet ? 'green' : 'red' }}>
+            <div 
+              key={className} 
+              style={{ color: isReqMet ? 'green' : 'red', cursor: 'pointer' }}
+              onClick={() => setSelectedClass(className)}
+            >
               <h3>{className}</h3>
-              {Object.keys(classInfo).map((attr) => (
-                <div key={attr}>
-                  {attr}: {classInfo[attr]}
+              {selectedClass === className && (
+                <div>
+                  {Object.entries(classInfo).map(([attr, value]) => (
+                    <div key={attr}>
+                      {attr}: {value}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           )
         })}
