@@ -25,6 +25,11 @@ function App() {
 
   const [selectedClass, setSelectedClass] = useState(null);
 
+  // Function to calculate ability modifier
+  const calculateModifier = (attributeValue) => {
+    return Math.floor((attributeValue - 10) / 2);
+  };
+
   return (
     <div className="App">
       <header className="App-header">
@@ -37,6 +42,7 @@ function App() {
             {attr}: {attributes[attr]}
             <button onClick={() => updateAttribute(attr, 1)}>+</button>
             <button onClick={() => updateAttribute(attr, -1)}>-</button>
+            <span> Modifier: {calculateModifier(attributes[attr])}</span>
           </div>
         ))}
       </section>
