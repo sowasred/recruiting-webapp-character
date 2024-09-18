@@ -18,6 +18,11 @@ function App() {
     setNum(prevNum => prevNum + change);
   };
 
+  // Function to check if the req are met
+  const checkRequirements = (classInfo) => {
+    return ATTRIBUTE_LIST.every(attr => attributes[attr] >= classInfo[attr]);
+  };
+
   return (
     <div className="App">
       <header className="App-header">
@@ -32,6 +37,23 @@ function App() {
             <button onClick={() => updateAttribute(attr, -1)}>-</button>
           </div>
         ))}
+      </section>
+      <section className="App-section">
+        <h2>Classes</h2>
+        {Object.keys(CLASS_LIST).map((className) => {
+          const classInfo = CLASS_LIST[className];
+          const isReqMet = checkRequirements(classInfo);
+          return (
+            <div key={className} style={{ color: isReqMet ? 'green' : 'red' }}>
+              <h3>{className}</h3>
+              {Object.keys(classInfo).map((attr) => (
+                <div key={attr}>
+                  {attr}: {classInfo[attr]}
+                </div>
+              ))}
+            </div>
+          )
+        })}
       </section>
     </div>
   );
